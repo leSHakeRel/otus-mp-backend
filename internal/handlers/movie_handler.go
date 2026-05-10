@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"encoding/json"
-	"io"
+	// "encoding/json"
+	// "io"
 	"net/http"
 	"strconv"
 
@@ -306,11 +306,11 @@ func (h *MovieHandler) GetFilmsForEvening(c *gin.Context) {
 }
 
 // Helper function to read JSON from HTTP response
-func readJSON(resp *http.Response, v interface{}) error {
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(body, v)
-}
+// func readJSON(resp *http.Response, v interface{}) error {
+// 	defer resp.Body.Close()
+// 	body, err := io.ReadAll(resp.Body)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return json.Unmarshal(body, v)
+// }

@@ -1,14 +1,14 @@
 package services
 
 import (
-	"encoding/json"
-	"io"
+	// "encoding/json"
+	// "io"
 	"movie-night-planner-backend/internal/models"
 	"movie-night-planner-backend/internal/repositories"
 	"movie-night-planner-backend/internal/tmdb"
 	"movie-night-planner-backend/internal/utils"
 	"movie-night-planner-backend/pkg/response"
-	"net/http"
+	// "net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -181,11 +181,11 @@ func (s *MovieService) GetFilmsForEvening(eveningID uuid.UUID) ([]response.Eveni
 }
 
 // Helper function to read JSON from HTTP response
-func readJSON(resp *http.Response, v interface{}) error {
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(body, v)
-}
+// func readJSON(resp *http.Response, v interface{}) error {
+// 	defer resp.Body.Close()
+// 	body, err := io.ReadAll(resp.Body)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return json.Unmarshal(body, v)
+// }
