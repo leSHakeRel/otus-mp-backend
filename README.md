@@ -87,7 +87,7 @@ make docker-run
 ### Базовый URL
 
 ```
-http://localhost:8080/api/v1
+http://localhost:8080/api
 ```
 
 ### Аутентификация
@@ -122,19 +122,17 @@ Content-Type: application/json
 #### Получить все киновечера
 
 ```http
-GET /api/v1/evenings?page=1&limit=10
-```
+GET /api/evenings?page=1&limit=10
 
 #### Получить киновечер по ID
 
 ```http
-GET /api/v1/evenings/{id}
-```
+GET /api/evenings/{id}
 
 #### Создать киновечер
 
 ```http
-POST /api/v1/evenings
+POST /api/evenings
 Authorization: Bearer {token}
 Content-Type: application/json
 
@@ -149,12 +147,14 @@ Content-Type: application/json
 #### Обновить киновечер
 
 ```http
-PUT /api/v1/evenings/{id}
+PUT /api/evenings/{id}
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
   "title": "Обновленное название",
+  "description": "Новое описание",
+  "scheduled_at": "2026-05-15T20:00:00Z",
   "is_private": true
 }
 ```
@@ -162,7 +162,7 @@ Content-Type: application/json
 #### Удалить киновечер
 
 ```http
-DELETE /api/v1/evenings/{id}
+DELETE /api/evenings/{id}
 Authorization: Bearer {token}
 ```
 
@@ -171,19 +171,17 @@ Authorization: Bearer {token}
 #### Поиск фильмов
 
 ```http
-GET /api/v1/movies/search?q=back+to+future&page=1
-```
+GET /api/movies/search?q=back+to+future&page=1
 
 #### Получить детали фильма
 
 ```http
-GET /api/v1/movies/{tmdbId}
-```
+GET /api/movies/{tmdbId}
 
 #### Добавить фильм в киновечер
 
 ```http
-POST /api/v1/evenings/{eveningId}/movies
+POST /api/evenings/{eveningId}/movies
 Authorization: Bearer {token}
 Content-Type: application/json
 
@@ -195,8 +193,14 @@ Content-Type: application/json
 #### Удалить фильм из киновечера
 
 ```http
-DELETE /api/v1/evenings/{eveningId}/movies/{tmdbId}
+DELETE /api/evenings/{eveningId}/movies/{tmdbId}
 Authorization: Bearer {token}
+```
+
+#### Получить фильмы для киновечера
+
+```http
+GET /api/evenings/{eveningId}/movies
 ```
 
 ### Голосования
@@ -204,13 +208,12 @@ Authorization: Bearer {token}
 #### Получить голоса для киновечера
 
 ```http
-GET /api/v1/evenings/{eveningId}/votes
-```
+GET /api/evenings/{eveningId}/votes
 
 #### Голосовать за фильм
 
 ```http
-POST /api/v1/evenings/{eveningId}/votes
+POST /api/evenings/{eveningId}/votes
 Authorization: Bearer {token}
 Content-Type: application/json
 
@@ -225,13 +228,12 @@ Content-Type: application/json
 #### Получить комментарии для киновечера
 
 ```http
-GET /api/v1/evenings/{eveningId}/comments
-```
+GET /api/evenings/{eveningId}/comments
 
 #### Добавить комментарий
 
 ```http
-POST /api/v1/evenings/{eveningId}/comments
+POST /api/evenings/{eveningId}/comments
 Authorization: Bearer {token}
 Content-Type: application/json
 

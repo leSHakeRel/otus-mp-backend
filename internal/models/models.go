@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type User struct {
@@ -22,6 +21,13 @@ type User struct {
 
 func (User) TableName() string {
 	return "users"
+}
+
+func (u *User) BeforeCreate() error {
+	if u.ID == uuid.Nil {
+		u.ID = uuid.New()
+	}
+	return nil
 }
 
 type Evening struct {
@@ -44,7 +50,7 @@ func (Evening) TableName() string {
 	return "evenings"
 }
 
-func (e *Evening) BeforeCreate(tx *gorm.DB) error {
+func (e *Evening) BeforeCreate() error {
 	if e.ID == uuid.Nil {
 		e.ID = uuid.New()
 	}
@@ -71,7 +77,7 @@ func (EveningFilm) TableName() string {
 	return "evening_films"
 }
 
-func (ef *EveningFilm) BeforeCreate(tx *gorm.DB) error {
+func (ef *EveningFilm) BeforeCreate() error {
 	if ef.ID == uuid.Nil {
 		ef.ID = uuid.New()
 	}
@@ -95,7 +101,7 @@ func (Vote) TableName() string {
 	return "votes"
 }
 
-func (v *Vote) BeforeCreate(tx *gorm.DB) error {
+func (v *Vote) BeforeCreate() error {
 	if v.ID == uuid.Nil {
 		v.ID = uuid.New()
 	}
@@ -118,7 +124,7 @@ func (Comment) TableName() string {
 	return "comments"
 }
 
-func (c *Comment) BeforeCreate(tx *gorm.DB) error {
+func (c *Comment) BeforeCreate() error {
 	if c.ID == uuid.Nil {
 		c.ID = uuid.New()
 	}

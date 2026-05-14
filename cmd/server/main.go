@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+
 	"movie-night-planner-backend/internal/config"
 	"movie-night-planner-backend/internal/database"
 	"movie-night-planner-backend/internal/handlers"
