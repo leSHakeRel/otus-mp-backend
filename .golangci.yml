@@ -1,0 +1,36 @@
+run:
+  timeout: 5m
+  go: "1.21"
+
+linters:
+  enable:
+    - errcheck
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+  disable:
+    - deadcode
+    - exhaustivestruct
+    - golint
+    - ifshort
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - varcheck
+    - structcheck
+    - depguard
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/your-org/movie-night-planner
+
+issues:
+  exclude-use-default: false
+  exclude:
+    - "SA1019" # Deprecated fields
+    - "SA1006" # Printf-style function with dynamic format string
