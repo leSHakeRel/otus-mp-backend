@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"movie-night-planner-backend/internal/config"
 	"net/http"
 	"time"
+
+	"movie-night-planner-backend/internal/config"
 )
 
 type Client struct {
@@ -62,7 +63,7 @@ func (c *Client) SearchMovies(query string, page int) (*SearchResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -86,7 +87,7 @@ func (c *Client) GetMovieDetails(tmdbID int) (*MovieDetails, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

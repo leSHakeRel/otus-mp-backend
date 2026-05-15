@@ -6,15 +6,33 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_USER", "postgres")
-	os.Setenv("DB_PASSWORD", "postgres")
-	os.Setenv("DB_NAME", "test_db")
-	os.Setenv("DB_SSLMODE", "disable")
-	os.Setenv("JWT_SECRET", "test-secret")
-	os.Setenv("TMDB_API_KEY", "test-key")
-	os.Setenv("SERVER_PORT", "8080")
+	if err := os.Setenv("DB_HOST", "localhost"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("DB_PORT", "5432"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("DB_USER", "postgres"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("DB_PASSWORD", "postgres"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("DB_NAME", "test_db"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("DB_SSLMODE", "disable"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("JWT_SECRET", "test-secret"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("TMDB_API_KEY", "test-key"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("SERVER_PORT", "8080"); err != nil {
+		t.Fatal(err)
+	}
 	defer os.Clearenv()
 
 	cfg, err := Load()

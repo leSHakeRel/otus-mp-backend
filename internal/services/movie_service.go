@@ -1,17 +1,15 @@
 package services
 
 import (
-	// "encoding/json"
-	// "io"
+	"time"
+
+	"github.com/google/uuid"
+
 	"movie-night-planner-backend/internal/models"
 	"movie-night-planner-backend/internal/repositories"
 	"movie-night-planner-backend/internal/tmdb"
 	"movie-night-planner-backend/internal/utils"
 	"movie-night-planner-backend/pkg/response"
-	// "net/http"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 type MovieService struct {
