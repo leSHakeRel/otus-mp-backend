@@ -31,7 +31,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          install-mode: binary
+          install-mode: goinstall
           skip-cache: true
 
   test:
