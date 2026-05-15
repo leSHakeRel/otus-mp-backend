@@ -20,6 +20,11 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Run go vet
+        run: |
+          go mod download
+          go vet ./...
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -58,6 +63,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Download dependencies
+        run: go mod download
+
       - name: Run tests
         env:
           DB_HOST: localhost
@@ -69,7 +77,6 @@ jobs:
           JWT_SECRET: test-secret-key
           TMDB_API_KEY: test-key
         run: |
-          go mod download
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
