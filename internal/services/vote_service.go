@@ -17,7 +17,7 @@ type VoteService struct {
 }
 
 type CreateVoteInput struct {
-	EveningFilmID uuid.UUID `json:"evening_film_id" validate:"required"`
+	EveningFilmID uuid.UUID `json:"eveningFilmId" validate:"required"`
 	Value         int       `json:"value" validate:"required,min=1,max=5"`
 }
 

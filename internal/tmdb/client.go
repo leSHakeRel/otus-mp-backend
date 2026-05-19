@@ -18,13 +18,15 @@ type Client struct {
 }
 
 type Movie struct {
-	ID           int        `json:"id"`
-	Title        string     `json:"title"`
-	PosterPath   string     `json:"poster_path"`
-	BackdropPath string     `json:"backdrop_path"`
-	ReleaseDate  *time.Time `json:"release_date"`
-	VoteAverage  float64    `json:"vote_average"`
-	Overview     string     `json:"overview"`
+	ID           int     `json:"id"`
+	Title        string  `json:"title"`
+	PosterPath   string  `json:"poster_path"`
+	BackdropPath string  `json:"backdrop_path"`
+	ReleaseDate  string  `json:"release_date"`
+	VoteAverage  float64 `json:"vote_average"`
+	VoteCount    int     `json:"vote_count"`
+	Overview     string  `json:"overview"`
+	GenreIDs     []int   `json:"genre_ids"`
 }
 
 type SearchResponse struct {
@@ -35,13 +37,15 @@ type SearchResponse struct {
 }
 
 type MovieDetails struct {
-	ID           int        `json:"id"`
-	Title        string     `json:"title"`
-	PosterPath   string     `json:"poster_path"`
-	BackdropPath string     `json:"backdrop_path"`
-	ReleaseDate  *time.Time `json:"release_date"`
-	VoteAverage  float64    `json:"vote_average"`
-	Overview     string     `json:"overview"`
+	ID           int     `json:"id"`
+	Title        string  `json:"title"`
+	PosterPath   string  `json:"poster_path"`
+	BackdropPath string  `json:"backdrop_path"`
+	ReleaseDate  string  `json:"release_date"`
+	VoteAverage  float64 `json:"vote_average"`
+	VoteCount    int     `json:"vote_count"`
+	Overview     string  `json:"overview"`
+	GenreIDs     []int   `json:"genre_ids"`
 }
 
 func NewClient(cfg *config.TMDBConfig) *Client {
@@ -58,6 +62,30 @@ func NewClient(cfg *config.TMDBConfig) *Client {
 func (c *Client) SearchMovies(query string, page int) (*SearchResponse, error) {
 	url := fmt.Sprintf("%s/search/movie?api_key=%s&language=en-US&page=%d&query=%s",
 		c.baseURL, c.apiKey, page, query)
+
+	resp, err := c.httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("tmdb api error: %s - %s", resp.Status, string(body))
+	}
+
+	var searchResp SearchResponse
+	err = json.NewDecoder(resp.Body).Decode(&searchResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &searchResp, nil
+}
+
+func (c *Client) GetPopularMovies(page int) (*SearchResponse, error) {
+	url := fmt.Sprintf("%s/movie/popular?api_key=%s&language=en-US&page=%d",
+		c.baseURL, c.apiKey, page)
 
 	resp, err := c.httpClient.Get(url)
 	if err != nil {

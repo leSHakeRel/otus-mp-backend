@@ -41,11 +41,14 @@ func main() {
 	// Initialize services
 	jwtService := utils.NewJWTService(cfg.JWT.Secret, cfg.JWT.Expiration)
 	authService := services.NewAuthService(userRepo, jwtService)
-	eveningService := services.NewEveningService(eveningRepo, eveningFilmRepo, userRepo)
+	eveningService := services.NewEveningService(eveningRepo, eveningFilmRepo, voteRepo, commentRepo, userRepo)
 	tmdbClient := tmdb.NewClient(&cfg.TMDB)
 	movieService := services.NewMovieService(eveningFilmRepo, eveningRepo, tmdbClient)
 	voteService := services.NewVoteService(voteRepo, eveningRepo, eveningFilmRepo, userRepo)
 	commentService := services.NewCommentService(commentRepo, eveningRepo, userRepo)
+
+	// Initialize services
+	userService := services.NewUserService(userRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -53,6 +56,7 @@ func main() {
 	movieHandler := handlers.NewMovieHandler(movieService)
 	voteHandler := handlers.NewVoteHandler(voteService)
 	commentHandler := handlers.NewCommentHandler(commentService)
+	userHandler := handlers.NewUserHandler(userService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
@@ -86,32 +90,49 @@ func main() {
 			protected.GET("/auth/me", authHandler.GetMe)
 		}
 
-		// Evening routes
+		// Evening routes (public read only, optional auth for filter=my)
 		evenings := api.Group("/evenings")
+		evenings.Use(authMiddleware.OptionalAuth())
 		{
 			evenings.GET("", eveningHandler.GetAllEvenings)
 			evenings.GET("/:id", eveningHandler.GetEvening)
-			evenings.POST("", eveningHandler.CreateEvening)
-			evenings.PUT("/:id", eveningHandler.UpdateEvening)
-			evenings.DELETE("/:id", eveningHandler.DeleteEvening)
+			evenings.GET("/:id/movies", movieHandler.GetFilmsForEvening)
+			evenings.GET("/:id/votes", voteHandler.GetVotesForEvening)
+			evenings.GET("/:id/comments", commentHandler.GetCommentsForEvening)
+		}
+
+		// Evening routes (protected - write operations)
+		protectedEvenings := api.Group("/evenings")
+		protectedEvenings.Use(authMiddleware.Authenticate())
+		{
+			protectedEvenings.POST("", eveningHandler.CreateEvening)
+			protectedEvenings.PUT("/:id", eveningHandler.UpdateEvening)
+			protectedEvenings.DELETE("/:id", eveningHandler.DeleteEvening)
 
 			// Evening films
-			evenings.GET("/:id/movies", movieHandler.GetFilmsForEvening)
-			evenings.POST("/:id/movies", movieHandler.AddFilmToEvening)
-			evenings.DELETE("/:id/movies/:tmdbId", movieHandler.RemoveFilmFromEvening)
+			protectedEvenings.POST("/:id/movies", movieHandler.AddFilmToEvening)
+			protectedEvenings.DELETE("/:id/movies/:tmdbId", movieHandler.RemoveFilmFromEvening)
 
 			// Evening votes
-			evenings.GET("/:id/votes", voteHandler.GetVotesForEvening)
-			evenings.POST("/:id/votes", voteHandler.CreateVote)
+			protectedEvenings.POST("/:id/votes", voteHandler.CreateVote)
+			protectedEvenings.DELETE("/:id/votes/:voteId", voteHandler.DeleteVote)
 
 			// Evening comments
-			evenings.GET("/:id/comments", commentHandler.GetCommentsForEvening)
-			evenings.POST("/:id/comments", commentHandler.CreateComment)
+			protectedEvenings.POST("/:id/comments", commentHandler.CreateComment)
+		}
+
+		// User routes (protected)
+		users := api.Group("/users")
+		users.Use(authMiddleware.Authenticate())
+		{
+			users.GET("", userHandler.GetAllUsers)
+			users.GET("/:userId", userHandler.GetUser)
 		}
 
 		// Movie routes (public)
 		movies := api.Group("/movies")
 		{
+			movies.GET("/popular", movieHandler.GetPopularMovies)
 			movies.GET("/search", movieHandler.SearchMovies)
 			movies.GET("/:tmdbId", movieHandler.GetMovieDetails)
 		}

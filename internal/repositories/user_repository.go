@@ -46,6 +46,24 @@ func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) FindAll(page, limit int) ([]models.User, int64, error) {
+	var users []models.User
+	var total int64
+
+	// Получить общее количество пользователей
+	if err := r.db.Model(&models.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Получить страницу с пагинацией
+	offset := (page - 1) * limit
+	if err := r.db.Offset(offset).Limit(limit).Order("created_at desc").Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
 func (r *UserRepository) Update(user *models.User) error {
 	return r.db.Save(user).Error
 }

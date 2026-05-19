@@ -34,7 +34,7 @@ func NewVoteHandler(voteService *services.VoteService) *VoteHandler {
 // @Failure 409 {object} response.ErrorResponse
 // @Router /api/evenings/{eveningId}/votes [post]
 func (h *VoteHandler) CreateVote(c *gin.Context) {
-	eveningID, err := uuid.Parse(c.Param("eveningId"))
+	eveningID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error: &response.AppError{
@@ -118,7 +118,7 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 // @Failure 404 {object} response.ErrorResponse
 // @Router /api/evenings/{eveningId}/votes [get]
 func (h *VoteHandler) GetVotesForEvening(c *gin.Context) {
-	eveningID, err := uuid.Parse(c.Param("eveningId"))
+	eveningID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error: &response.AppError{
@@ -151,4 +151,71 @@ func (h *VoteHandler) GetVotesForEvening(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+// DeleteVote godoc
+// @Summary Delete vote
+// @Description Delete a vote from an evening
+// @Tags votes
+// @Security BearerAuth
+// @Param eveningId path string true "Evening ID"
+// @Param voteId path string true "Vote ID"
+// @Success 204 {object} nil
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 403 {object} response.ErrorResponse
+// @Failure 404 {object} response.ErrorResponse
+// @Router /api/evenings/{eveningId}/votes/{voteId} [delete]
+func (h *VoteHandler) DeleteVote(c *gin.Context) {
+	voteID, err := uuid.Parse(c.Param("voteId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error: &response.AppError{
+				Code:    "INVALID_ID",
+				Message: "Invalid vote ID",
+			},
+		})
+		return
+	}
+
+	userID, _ := c.Get("userID")
+	err = h.voteService.Delete(voteID, userID.(uuid.UUID))
+	if err != nil {
+		appErr, ok := err.(*utils.AppError)
+		if ok {
+			if appErr.Code == "VOTE_NOT_FOUND" {
+				c.JSON(http.StatusNotFound, response.ErrorResponse{
+					Error: &response.AppError{
+						Code:    appErr.Code,
+						Message: appErr.Message,
+					},
+				})
+				return
+			}
+			if appErr.Code == "FORBIDDEN" {
+				c.JSON(http.StatusForbidden, response.ErrorResponse{
+					Error: &response.AppError{
+						Code:    appErr.Code,
+						Message: appErr.Message,
+					},
+				})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Error: &response.AppError{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error: &response.AppError{
+				Code:    "INTERNAL_ERROR",
+				Message: "Internal server error",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
 }

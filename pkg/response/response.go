@@ -10,47 +10,53 @@ type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
 	Username  string    `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type EveningResponse struct {
-	ID          uuid.UUID    `json:"id"`
-	Title       string       `json:"title"`
-	Description string       `json:"description"`
-	ScheduledAt *time.Time   `json:"scheduled_at,omitempty"`
-	Owner       UserResponse `json:"owner"`
-	IsPrivate   bool         `json:"is_private"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
+	ID          uuid.UUID             `json:"id"`
+	Title       string                `json:"title"`
+	Description string                `json:"description"`
+	ScheduledAt *time.Time            `json:"scheduledAt,omitempty"`
+	CreatedBy   UserResponse          `json:"createdBy"`
+	IsPrivate   bool                  `json:"isPrivate"`
+	Movies      []EveningFilmResponse `json:"movies"`
+	Votes       []VoteResponse        `json:"votes"`
+	Comments    []CommentResponse     `json:"comments"`
+	CreatedAt   time.Time             `json:"createdAt"`
+	UpdatedAt   time.Time             `json:"updatedAt"`
 }
 
 type EveningFilmResponse struct {
-	ID           uuid.UUID  `json:"id"`
-	TMDBID       int        `json:"tmdb_id"`
-	Title        string     `json:"title"`
-	PosterPath   string     `json:"poster_path,omitempty"`
-	BackdropPath string     `json:"backdrop_path,omitempty"`
-	ReleaseDate  *time.Time `json:"release_date,omitempty"`
-	VoteAverage  float64    `json:"vote_average,omitempty"`
-	Overview     string     `json:"overview,omitempty"`
-	AddedAt      time.Time  `json:"added_at"`
+	ID           uuid.UUID `json:"id"`
+	TMDBID       int       `json:"tmdbId"`
+	Title        string    `json:"title"`
+	PosterPath   string    `json:"posterPath,omitempty"`
+	BackdropPath string    `json:"backdropPath,omitempty"`
+	ReleaseDate  string    `json:"releaseDate,omitempty"`
+	VoteAverage  float64   `json:"voteAverage,omitempty"`
+	VoteCount    int       `json:"voteCount"`
+	Overview     string    `json:"overview,omitempty"`
+	GenreIDs     []int     `json:"genreIds,omitempty"`
+	AddedAt      time.Time `json:"addedAt"`
 }
 
 type VoteResponse struct {
 	ID            uuid.UUID    `json:"id"`
-	EveningFilmID uuid.UUID    `json:"evening_film_id"`
+	EveningFilmID uuid.UUID    `json:"eveningFilmId"`
+	UserID        uuid.UUID    `json:"userId"`
 	User          UserResponse `json:"user"`
 	Value         int          `json:"value"`
-	CreatedAt     time.Time    `json:"created_at"`
+	CreatedAt     time.Time    `json:"createdAt"`
 }
 
 type VoteSummary struct {
-	EveningFilmID    uuid.UUID        `json:"evening_film_id"`
+	EveningFilmID    uuid.UUID        `json:"eveningFilmId"`
 	Title            string           `json:"title"`
-	PosterPath       string           `json:"poster_path,omitempty"`
-	TotalVotes       int              `json:"total_votes"`
-	AverageScore     float64          `json:"average_score"`
-	VoteDistribution VoteDistribution `json:"vote_distribution"`
+	PosterPath       string           `json:"posterPath,omitempty"`
+	TotalVotes       int              `json:"totalVotes"`
+	AverageScore     float64          `json:"averageScore"`
+	VoteDistribution VoteDistribution `json:"voteDistribution"`
 }
 
 type VoteDistribution struct {
@@ -63,16 +69,19 @@ type VoteDistribution struct {
 
 type CommentResponse struct {
 	ID        uuid.UUID    `json:"id"`
+	EveningID uuid.UUID    `json:"eveningId"`
+	UserID    uuid.UUID    `json:"userId"`
+	Username  string       `json:"username"`
 	User      UserResponse `json:"user"`
 	Content   string       `json:"content"`
-	CreatedAt time.Time    `json:"created_at"`
+	CreatedAt time.Time    `json:"createdAt"`
 }
 
 type Pagination struct {
 	Page       int   `json:"page"`
 	Limit      int   `json:"limit"`
 	Total      int64 `json:"total"`
-	TotalPages int   `json:"total_pages"`
+	TotalPages int   `json:"totalPages"`
 }
 
 type PaginatedResponse[T any] struct {
@@ -94,7 +103,7 @@ type AuthResponse struct {
 	ID           uuid.UUID `json:"id"`
 	Email        string    `json:"email"`
 	Username     string    `json:"username"`
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-	ExpiresIn    int       `json:"expires_in"`
+	AccessToken  string    `json:"accessToken"`
+	RefreshToken string    `json:"refreshToken,omitempty"`
+	ExpiresIn    int       `json:"expiresIn"`
 }

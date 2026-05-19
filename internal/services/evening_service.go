@@ -14,31 +14,37 @@ import (
 type EveningService struct {
 	eveningRepo     *repositories.EveningRepository
 	eveningFilmRepo *repositories.EveningFilmRepository
+	voteRepo        *repositories.VoteRepository
+	commentRepo     *repositories.CommentRepository
 	userRepo        *repositories.UserRepository
 }
 
 type CreateEveningInput struct {
 	Title       string     `json:"title" validate:"required,min=3,max=255"`
 	Description string     `json:"description" validate:"max=1000"`
-	ScheduledAt *time.Time `json:"scheduled_at"`
-	IsPrivate   bool       `json:"is_private"`
+	ScheduledAt *time.Time `json:"scheduledAt"`
+	IsPrivate   bool       `json:"isPrivate"`
 }
 
 type UpdateEveningInput struct {
 	Title       string     `json:"title,omitempty" validate:"max=255"`
 	Description string     `json:"description,omitempty" validate:"max=1000"`
-	ScheduledAt *time.Time `json:"scheduled_at"`
-	IsPrivate   *bool      `json:"is_private"`
+	ScheduledAt *time.Time `json:"scheduledAt"`
+	IsPrivate   *bool      `json:"isPrivate"`
 }
 
 func NewEveningService(
 	eveningRepo *repositories.EveningRepository,
 	eveningFilmRepo *repositories.EveningFilmRepository,
+	voteRepo *repositories.VoteRepository,
+	commentRepo *repositories.CommentRepository,
 	userRepo *repositories.UserRepository,
 ) *EveningService {
 	return &EveningService{
 		eveningRepo:     eveningRepo,
 		eveningFilmRepo: eveningFilmRepo,
+		voteRepo:        voteRepo,
+		commentRepo:     commentRepo,
 		userRepo:        userRepo,
 	}
 }
@@ -72,10 +78,82 @@ func (s *EveningService) FindByID(id uuid.UUID) (*response.EveningResponse, erro
 		return nil, utils.WrapError(err, "EVENING_NOT_FOUND", "Evening not found")
 	}
 
-	return s.mapEveningToResponse(evening), nil
+	resp := s.mapEveningToResponse(evening)
+
+	// Load movies
+	films, err := s.eveningFilmRepo.FindByEveningID(id)
+	if err == nil {
+		for _, film := range films {
+			movieResp := response.EveningFilmResponse{
+				ID:           film.ID,
+				TMDBID:       film.TMDBID,
+				Title:        film.Title,
+				PosterPath:   film.PosterPath,
+				BackdropPath: film.BackdropPath,
+				VoteAverage:  film.VoteAverage,
+				Overview:     film.Overview,
+				AddedAt:      film.AddedAt,
+			}
+			if film.ReleaseDate != nil {
+				movieResp.ReleaseDate = film.ReleaseDate.Format("2006-01-02")
+			}
+			resp.Movies = append(resp.Movies, movieResp)
+		}
+	}
+
+	// Load votes
+	votes, err := s.voteRepo.FindByEveningID(id)
+	if err == nil {
+		for _, vote := range votes {
+			vr := response.VoteResponse{
+				ID:            vote.ID,
+				EveningFilmID: vote.EveningFilmID,
+				UserID:        vote.UserID,
+				Value:         vote.Value,
+				CreatedAt:     vote.CreatedAt,
+			}
+			// Load user info if available
+			user, userErr := s.userRepo.FindByID(vote.UserID)
+			if userErr == nil {
+				vr.User = response.UserResponse{
+					ID:        user.ID,
+					Email:     user.Email,
+					Username:  user.Username,
+					CreatedAt: user.CreatedAt,
+				}
+			}
+			resp.Votes = append(resp.Votes, vr)
+		}
+	}
+
+	// Load comments
+	comments, err := s.commentRepo.FindByEveningID(id)
+	if err == nil {
+		for _, comment := range comments {
+			cr := response.CommentResponse{
+				ID:        comment.ID,
+				EveningID: comment.EveningID,
+				UserID:    comment.UserID,
+				Content:   comment.Content,
+				CreatedAt: comment.CreatedAt,
+			}
+			if comment.User.ID != uuid.Nil {
+				cr.User = response.UserResponse{
+					ID:        comment.User.ID,
+					Email:     comment.User.Email,
+					Username:  comment.User.Username,
+					CreatedAt: comment.User.CreatedAt,
+				}
+				cr.Username = comment.User.Username
+			}
+			resp.Comments = append(resp.Comments, cr)
+		}
+	}
+
+	return resp, nil
 }
 
-func (s *EveningService) FindAll(page, limit int, isPrivate *bool) (*response.PaginatedResponse[response.EveningResponse], error) {
+func (s *EveningService) FindAll(page, limit int, isPrivate *bool, createdBy *uuid.UUID) (*response.PaginatedResponse[response.EveningResponse], error) {
 	if page < 1 {
 		page = 1
 	}
@@ -86,7 +164,44 @@ func (s *EveningService) FindAll(page, limit int, isPrivate *bool) (*response.Pa
 		limit = 100
 	}
 
-	evenings, total, err := s.eveningRepo.FindAll(page, limit, isPrivate)
+	evenings, total, err := s.eveningRepo.FindAll(page, limit, isPrivate, createdBy)
+	if err != nil {
+		return nil, utils.WrapError(err, "DATABASE_ERROR", "Failed to fetch evenings")
+	}
+
+	data := make([]response.EveningResponse, len(evenings))
+	for i, evening := range evenings {
+		data[i] = *s.mapEveningToResponse(&evening)
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit != 0 {
+		totalPages++
+	}
+
+	return &response.PaginatedResponse[response.EveningResponse]{
+		Data: data,
+		Pagination: response.Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+		},
+	}, nil
+}
+
+func (s *EveningService) FindByOwner(ownerID uuid.UUID, page, limit int) (*response.PaginatedResponse[response.EveningResponse], error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	evenings, total, err := s.eveningRepo.FindByOwnerID(ownerID, page, limit)
 	if err != nil {
 		return nil, utils.WrapError(err, "DATABASE_ERROR", "Failed to fetch evenings")
 	}
@@ -171,10 +286,13 @@ func (s *EveningService) mapEveningToResponse(evening *models.Evening) *response
 		IsPrivate:   evening.IsPrivate,
 		CreatedAt:   evening.CreatedAt,
 		UpdatedAt:   evening.UpdatedAt,
+		Movies:      make([]response.EveningFilmResponse, 0),
+		Votes:       make([]response.VoteResponse, 0),
+		Comments:    make([]response.CommentResponse, 0),
 	}
 
 	if evening.Owner.ID != uuid.Nil {
-		resp.Owner = response.UserResponse{
+		resp.CreatedBy = response.UserResponse{
 			ID:        evening.Owner.ID,
 			Email:     evening.Owner.Email,
 			Username:  evening.Owner.Username,

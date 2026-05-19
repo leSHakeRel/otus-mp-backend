@@ -129,19 +129,15 @@ func (h *EveningHandler) GetEvening(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number"
 // @Param limit query int false "Items per page"
-// @Param is_private query bool false "Filter by privacy"
+// @Param filter query string false "Filter: 'my' (own evenings), 'public' (public only), or empty (all)"
+// @Param createdBy query string false "Filter by creator user ID"
 // @Success 200 {object} response.PaginatedResponse[response.EveningResponse]
 // @Router /api/evenings [get]
 func (h *EveningHandler) GetAllEvenings(c *gin.Context) {
 	page, _ := c.GetQuery("page")
 	limit, _ := c.GetQuery("limit")
-	isPrivate, _ := c.GetQuery("is_private")
-
-	var isPrivateBool *bool
-	if isPrivate != "" {
-		val := isPrivate == "true"
-		isPrivateBool = &val
-	}
+	filter, _ := c.GetQuery("filter")
+	createdByStr, _ := c.GetQuery("createdBy")
 
 	p, _ := strconv.Atoi(page)
 	if p < 1 {
@@ -152,7 +148,49 @@ func (h *EveningHandler) GetAllEvenings(c *gin.Context) {
 		l = 10
 	}
 
-	result, err := h.eveningService.FindAll(p, l, isPrivateBool)
+	// Parse createdBy if provided
+	var createdBy *uuid.UUID
+	if createdByStr != "" {
+		parsedID, err := uuid.Parse(createdByStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, response.ErrorResponse{
+				Error: &response.AppError{
+					Code:    "INVALID_ID",
+					Message: "Invalid createdBy ID",
+				},
+			})
+			return
+		}
+		createdBy = &parsedID
+	}
+
+	var result *response.PaginatedResponse[response.EveningResponse]
+	var err error
+
+	switch filter {
+	case "my":
+		if createdBy != nil {
+			result, err = h.eveningService.FindAll(p, l, nil, createdBy)
+		} else {
+			userID, exists := c.Get("userID")
+			if !exists {
+				c.JSON(http.StatusUnauthorized, response.ErrorResponse{
+					Error: &response.AppError{
+						Code:    "UNAUTHORIZED",
+						Message: "Authentication required for 'my' filter",
+					},
+				})
+				return
+			}
+			result, err = h.eveningService.FindByOwner(userID.(uuid.UUID), p, l)
+		}
+	case "public":
+		isPrivate := false
+		result, err = h.eveningService.FindAll(p, l, &isPrivate, createdBy)
+	default:
+		result, err = h.eveningService.FindAll(p, l, nil, createdBy)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.ErrorResponse{
 			Error: &response.AppError{

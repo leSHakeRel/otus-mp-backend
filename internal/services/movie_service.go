@@ -12,6 +12,26 @@ import (
 	"movie-night-planner-backend/pkg/response"
 )
 
+// parseReleaseDate parses a TMDB release date string (YYYY-MM-DD) into *time.Time.
+func parseReleaseDate(s string) *time.Time {
+	if s == "" {
+		return nil
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return nil
+	}
+	return &t
+}
+
+// formatReleaseDate formats a *time.Time into a TMDB-style release date string (YYYY-MM-DD).
+func formatReleaseDate(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("2006-01-02")
+}
+
 type MovieService struct {
 	eveningFilmRepo *repositories.EveningFilmRepository
 	eveningRepo     *repositories.EveningRepository
@@ -23,8 +43,12 @@ type SearchMoviesInput struct {
 	Page  int    `form:"page"`
 }
 
+type GetPopularMoviesInput struct {
+	Page int `form:"page"`
+}
+
 type AddFilmToEveningInput struct {
-	TMDBID int `json:"tmdb_id" validate:"required"`
+	TMDBID int `json:"tmdbId" validate:"required"`
 }
 
 func NewMovieService(
@@ -59,7 +83,47 @@ func (s *MovieService) SearchMovies(input SearchMoviesInput) (*response.Paginate
 			BackdropPath: movie.BackdropPath,
 			ReleaseDate:  movie.ReleaseDate,
 			VoteAverage:  movie.VoteAverage,
+			VoteCount:    movie.VoteCount,
 			Overview:     movie.Overview,
+			GenreIDs:     movie.GenreIDs,
+			AddedAt:      time.Now(),
+		}
+	}
+
+	return &response.PaginatedResponse[response.EveningFilmResponse]{
+		Data: data,
+		Pagination: response.Pagination{
+			Page:       input.Page,
+			Limit:      20,
+			Total:      int64(result.TotalResults),
+			TotalPages: result.TotalPages,
+		},
+	}, nil
+}
+
+func (s *MovieService) GetPopularMovies(input GetPopularMoviesInput) (*response.PaginatedResponse[response.EveningFilmResponse], error) {
+	if input.Page < 1 {
+		input.Page = 1
+	}
+
+	result, err := s.tmdbClient.GetPopularMovies(input.Page)
+	if err != nil {
+		return nil, utils.WrapError(err, "TMDB_API_ERROR", "Failed to get popular movies from TMDB")
+	}
+
+	data := make([]response.EveningFilmResponse, len(result.Results))
+	for i, movie := range result.Results {
+		data[i] = response.EveningFilmResponse{
+			ID:           uuid.Nil,
+			TMDBID:       movie.ID,
+			Title:        movie.Title,
+			PosterPath:   movie.PosterPath,
+			BackdropPath: movie.BackdropPath,
+			ReleaseDate:  movie.ReleaseDate,
+			VoteAverage:  movie.VoteAverage,
+			VoteCount:    movie.VoteCount,
+			Overview:     movie.Overview,
+			GenreIDs:     movie.GenreIDs,
 			AddedAt:      time.Now(),
 		}
 	}
@@ -89,7 +153,9 @@ func (s *MovieService) GetMovieDetails(tmdbID int) (*response.EveningFilmRespons
 		BackdropPath: movie.BackdropPath,
 		ReleaseDate:  movie.ReleaseDate,
 		VoteAverage:  movie.VoteAverage,
+		VoteCount:    movie.VoteCount,
 		Overview:     movie.Overview,
+		GenreIDs:     movie.GenreIDs,
 		AddedAt:      time.Now(),
 	}, nil
 }
@@ -120,7 +186,7 @@ func (s *MovieService) AddFilmToEvening(eveningID uuid.UUID, tmdbID int, userID 
 		Title:        movie.Title,
 		PosterPath:   movie.PosterPath,
 		BackdropPath: movie.BackdropPath,
-		ReleaseDate:  movie.ReleaseDate,
+		ReleaseDate:  parseReleaseDate(movie.ReleaseDate),
 		VoteAverage:  movie.VoteAverage,
 		Overview:     movie.Overview,
 	}
@@ -168,7 +234,7 @@ func (s *MovieService) GetFilmsForEvening(eveningID uuid.UUID) ([]response.Eveni
 			Title:        film.Title,
 			PosterPath:   film.PosterPath,
 			BackdropPath: film.BackdropPath,
-			ReleaseDate:  film.ReleaseDate,
+			ReleaseDate:  formatReleaseDate(film.ReleaseDate),
 			VoteAverage:  film.VoteAverage,
 			Overview:     film.Overview,
 			AddedAt:      film.AddedAt,
@@ -177,13 +243,3 @@ func (s *MovieService) GetFilmsForEvening(eveningID uuid.UUID) ([]response.Eveni
 
 	return data, nil
 }
-
-// Helper function to read JSON from HTTP response
-// func readJSON(resp *http.Response, v interface{}) error {
-// 	defer resp.Body.Close()
-// 	body, err := io.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return json.Unmarshal(body, v)
-// }

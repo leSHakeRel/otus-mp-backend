@@ -33,7 +33,7 @@ func NewCommentHandler(commentService *services.CommentService) *CommentHandler 
 // @Failure 404 {object} response.ErrorResponse
 // @Router /api/evenings/{eveningId}/comments [post]
 func (h *CommentHandler) CreateComment(c *gin.Context) {
-	eveningID, err := uuid.Parse(c.Param("eveningId"))
+	eveningID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error: &response.AppError{
@@ -99,7 +99,7 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 // @Failure 404 {object} response.ErrorResponse
 // @Router /api/evenings/{eveningId}/comments [get]
 func (h *CommentHandler) GetCommentsForEvening(c *gin.Context) {
-	eveningID, err := uuid.Parse(c.Param("eveningId"))
+	eveningID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error: &response.AppError{

@@ -44,7 +44,7 @@ func (r *EveningRepository) FindByOwnerID(ownerID uuid.UUID, page, limit int) ([
 	return evenings, total, nil
 }
 
-func (r *EveningRepository) FindAll(page, limit int, isPrivate *bool) ([]models.Evening, int64, error) {
+func (r *EveningRepository) FindAll(page, limit int, isPrivate *bool, ownerID *uuid.UUID) ([]models.Evening, int64, error) {
 	var evenings []models.Evening
 	var total int64
 
@@ -52,6 +52,10 @@ func (r *EveningRepository) FindAll(page, limit int, isPrivate *bool) ([]models.
 
 	if isPrivate != nil {
 		query = query.Where("is_private = ?", *isPrivate)
+	}
+
+	if ownerID != nil {
+		query = query.Where("owner_id = ?", *ownerID)
 	}
 
 	query.Count(&total)

@@ -108,27 +108,3 @@ func getEnv(key, defaultValue string) string {
 	}
 	return value
 }
-
-// func getEnvInt(key string, defaultValue int) int {
-// 	valueStr := getEnv(key, "")
-// 	if valueStr == "" {
-// 		return defaultValue
-// 	}
-// 	value, err := strconv.Atoi(valueStr)
-// 	if err != nil {
-// 		return defaultValue
-// 	}
-// 	return value
-// }
-
-// func getEnvBool(key string, defaultValue bool) bool {
-// 	valueStr := getEnv(key, "")
-// 	if valueStr == "" {
-// 		return defaultValue
-// 	}
-// 	value, err := strconv.ParseBool(valueStr)
-// 	if err != nil {
-// 		return defaultValue
-// 	}
-// 	return value
-// }

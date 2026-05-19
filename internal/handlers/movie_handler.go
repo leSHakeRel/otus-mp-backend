@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	// "encoding/json"
-	// "io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -46,6 +45,52 @@ func (h *MovieHandler) SearchMovies(c *gin.Context) {
 
 	result, err := h.movieService.SearchMovies(input)
 	if err != nil {
+		appErr, ok := err.(*utils.AppError)
+		if ok {
+			c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Error: &response.AppError{
+					Code:    appErr.Code,
+					Message: appErr.Message,
+				},
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.ErrorResponse{
+			Error: &response.AppError{
+				Code:    "INTERNAL_ERROR",
+				Message: "Internal server error",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GetPopularMovies godoc
+// @Summary Get popular movies
+// @Description Get popular movies from TMDB
+// @Tags movies
+// @Produce json
+// @Param page query int false "Page number"
+// @Success 200 {object} response.PaginatedResponse[response.EveningFilmResponse]
+// @Failure 500 {object} response.ErrorResponse
+// @Router /api/movies/popular [get]
+func (h *MovieHandler) GetPopularMovies(c *gin.Context) {
+	var input services.GetPopularMoviesInput
+	if err := c.ShouldBindQuery(&input); err != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorResponse{
+			Error: &response.AppError{
+				Code:    "INVALID_INPUT",
+				Message: "Invalid input: " + err.Error(),
+			},
+		})
+		return
+	}
+
+	result, err := h.movieService.GetPopularMovies(input)
+	if err != nil {
+		log.Printf("[ERROR] GetPopularMovies failed: %v", err)
 		appErr, ok := err.(*utils.AppError)
 		if ok {
 			c.JSON(http.StatusInternalServerError, response.ErrorResponse{
@@ -128,7 +173,7 @@ func (h *MovieHandler) GetMovieDetails(c *gin.Context) {
 // @Failure 409 {object} response.ErrorResponse
 // @Router /api/evenings/{eveningId}/movies [post]
 func (h *MovieHandler) AddFilmToEvening(c *gin.Context) {
-	eveningID, err := uuid.Parse(c.Param("eveningId"))
+	eveningID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error: &response.AppError{
@@ -204,7 +249,7 @@ func (h *MovieHandler) AddFilmToEvening(c *gin.Context) {
 // @Failure 404 {object} response.ErrorResponse
 // @Router /api/evenings/{eveningId}/movies/{tmdbId} [delete]
 func (h *MovieHandler) RemoveFilmFromEvening(c *gin.Context) {
-	eveningID, err := uuid.Parse(c.Param("eveningId"))
+	eveningID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error: &response.AppError{
@@ -270,7 +315,7 @@ func (h *MovieHandler) RemoveFilmFromEvening(c *gin.Context) {
 // @Failure 404 {object} response.ErrorResponse
 // @Router /api/evenings/{eveningId}/movies [get]
 func (h *MovieHandler) GetFilmsForEvening(c *gin.Context) {
-	eveningID, err := uuid.Parse(c.Param("eveningId"))
+	eveningID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.ErrorResponse{
 			Error: &response.AppError{
@@ -304,13 +349,3 @@ func (h *MovieHandler) GetFilmsForEvening(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
-
-// Helper function to read JSON from HTTP response
-// func readJSON(resp *http.Response, v interface{}) error {
-// 	defer resp.Body.Close()
-// 	body, err := io.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return json.Unmarshal(body, v)
-// }

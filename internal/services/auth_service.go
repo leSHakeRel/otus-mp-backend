@@ -29,9 +29,9 @@ type AuthResponse struct {
 	ID           uuid.UUID `json:"id"`
 	Email        string    `json:"email"`
 	Username     string    `json:"username"`
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-	ExpiresIn    int       `json:"expires_in"`
+	AccessToken  string    `json:"accessToken"`
+	RefreshToken string    `json:"refreshToken,omitempty"`
+	ExpiresIn    int       `json:"expiresIn"`
 }
 
 func NewAuthService(userRepo *repositories.UserRepository, jwtService *utils.JWTService) *AuthService {
