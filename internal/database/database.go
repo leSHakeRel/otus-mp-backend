@@ -17,7 +17,7 @@ var DB *gorm.DB
 func InitDatabase(cfg *config.DatabaseConfig) error {
 	var err error
 
-	fmt.Println("database name %s", cfg.DBName)
+	// fmt.Println("database name %s", cfg.DBName)
 
 	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
